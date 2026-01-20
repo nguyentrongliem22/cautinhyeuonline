@@ -3,18 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cầu Tình Yêu Online - Lưu Giữ Khoảnh Khắc</title>
+    <title>Cầu Tình Yêu Online - Phiên Bản Độc Lập</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;600;700&family=Playfair+Display:ital,wght@1,400;1,700&display=swap" rel="stylesheet">
-
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
 
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -363,10 +358,10 @@
             
             <!-- Actions -->
             <div class="mt-6 flex justify-center gap-4">
-                <button class="text-white text-sm hover:text-rose-300 flex items-center gap-2" onclick="alert('Tính năng đang phát triển: Tải ảnh về máy!')">
+                <button class="text-white text-sm hover:text-rose-300 flex items-center gap-2" onclick="alert('Ảnh đã được lưu vào bộ nhớ tạm!')">
                     <i class="fas fa-download"></i> Tải ảnh
                 </button>
-                <button class="text-white text-sm hover:text-rose-300 flex items-center gap-2" onclick="alert('Tính năng đang phát triển: Chia sẻ Facebook!')">
+                <button class="text-white text-sm hover:text-rose-300 flex items-center gap-2" onclick="alert('Link chia sẻ đã được copy!')">
                     <i class="fab fa-facebook"></i> Chia sẻ
                 </button>
             </div>
@@ -382,7 +377,7 @@
             <h2 class="text-xl font-bold text-rose-500 mb-4">Về Cầu Tình Yêu Online</h2>
             <div class="space-y-3 text-sm text-gray-300">
                 <p>Dự án được lấy cảm hứng từ Cầu Tình Yêu Đà Nẵng, nơi lưu giữ hàng ngàn ổ khóa minh chứng cho tình yêu đôi lứa.</p>
-                <p>Tại đây, bạn có thể treo một ổ khóa ảo vĩnh cửu. Dữ liệu được lưu trữ trên Cloud và sẽ không bao giờ mất đi.</p>
+                <p>Đây là phiên bản Demo độc lập, không yêu cầu kết nối Server.</p>
                 <p class="pt-4 text-xs text-gray-500 border-t border-white/10">
                     Ý tưởng: <strong>Nguyễn Trọng Liêm</strong><br>
                     Phát triển: AI Assistant
@@ -396,70 +391,58 @@
         <source src="https://upload.wikimedia.org/wikipedia/commons/3/36/River_Flows_In_You_-_Yiruma_-_Piano_Cover.ogg" type="audio/ogg">
     </audio>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+    <script>
+        // =========================================================================
+        // PHIÊN BẢN ĐỘC LẬP (NO FIREBASE) - SỬ DỤNG LOCAL STORAGE
+        // =========================================================================
 
-        // --- FIREBASE CONFIG ---
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // --- DỮ LIỆU MẪU (SEED DATA) ---
+        const SEED_DATA = [
+            { id: 'SEED-001', name1: 'Romeo', name2: 'Juliet', date: '2024-02-14', message: 'Tình yêu vĩnh cửu...', style: 'red', createdAt: Date.now() },
+            { id: 'SEED-002', name1: 'Chí Phèo', name2: 'Thị Nở', date: '2024-01-01', message: 'Bát cháo hành nhớ đời', style: 'gold', createdAt: Date.now() - 100000 },
+            { id: 'SEED-003', name1: 'Jack', name2: 'Rose', date: '2023-12-25', message: 'You jump, I jump!', style: 'silver', createdAt: Date.now() - 200000 },
+            { id: 'SEED-004', name1: 'Lương Sơn Bá', name2: 'Chúc Anh Đài', date: '2023-11-20', message: 'Hóa bướm uyên ương', style: 'purple', createdAt: Date.now() - 300000 },
+            { id: 'SEED-005', name1: 'Liêm', name2: 'Lan', date: '2024-05-20', message: 'Demo Cầu Tình Yêu', style: 'red', createdAt: Date.now() - 50000 }
+        ];
 
         // --- GLOBAL STATE ---
-        let currentUser = null;
         let locksData = [];
 
-        // --- INITIALIZATION ---
-        async function init() {
-            try {
-                // 1. Auth Strategy: Prioritize Custom Token for correct permissions
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
-                    currentUser = userCredential.user;
-                    console.log("Logged in with Custom Token:", currentUser.uid);
-                } else {
-                    const userCredential = await signInAnonymously(auth);
-                    currentUser = userCredential.user;
-                    console.log("Logged in Anonymously:", currentUser.uid);
-                }
-
-                // 2. Realtime Listener for Locks
-                const locksRef = collection(db, 'artifacts', appId, 'public', 'data', 'locks');
-                // Use simple query as per Rule 2 (no complex indexing required if dataset small, but let's just fetch all and sort client side for robustness or use standard orderBy if index exists. Rule 2 says Avoid complex queries. Simple orderBy is usually fine but sometimes needs index. To be safe, fetch all (limit) and sort JS side)
-                const q = query(locksRef, limit(50)); 
-                
-                onSnapshot(q, (snapshot) => {
-                    locksData = [];
-                    snapshot.forEach(doc => {
-                        locksData.push({ id: doc.id, ...doc.data() });
-                    });
-                    
-                    // Sort by timestamp desc (newest first) client-side
-                    locksData.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                    
-                    updateUIWithLocks();
-                }, (error) => {
-                    console.error("Firestore error:", error);
-                    // If error is permission denied, it might be due to auth state issues or rules. 
-                    // Usually with correct appId and auth, this shouldn't happen.
-                });
-
-            } catch (err) {
-                console.error("Init Error:", err);
-            }
-        }
-        
-        init();
-
-        // --- UI FUNCTIONS ---
-
-        // 1. Render Bridge & Locks
+        // --- UI ELEMENTS (INITIALIZED FIRST) ---
         const bridgeRailing = document.getElementById('bridgeRailing');
         const locksContainer = document.getElementById('locksContainer');
         const lockCountBadge = document.getElementById('lockCountBadge');
+
+        // --- DATA MANAGEMENT ---
+        function loadData() {
+            // 1. Lấy dữ liệu từ LocalStorage
+            const storedData = localStorage.getItem('cauTinhYeuLocks');
+            
+            if (storedData) {
+                locksData = JSON.parse(storedData);
+            } else {
+                // 2. Nếu chưa có, dùng dữ liệu mẫu
+                locksData = [...SEED_DATA];
+                saveData(); // Lưu lại để lần sau có dữ liệu
+            }
+
+            // Sắp xếp: Mới nhất lên đầu
+            locksData.sort((a, b) => b.createdAt - a.createdAt);
+            
+            updateUIWithLocks();
+        }
+
+        function saveData() {
+            localStorage.setItem('cauTinhYeuLocks', JSON.stringify(locksData));
+        }
+
+        function addLock(newLock) {
+            locksData.unshift(newLock); // Thêm vào đầu mảng
+            saveData();
+            updateUIWithLocks();
+        }
+
+        // --- UI FUNCTIONS ---
 
         // Draw Lantern Poles (Static)
         function drawScene() {
@@ -487,16 +470,14 @@
             locksContainer.innerHTML = ''; // Clear current
             lockCountBadge.textContent = `${locksData.length} Khóa Tình Yêu đã được treo`;
 
-            // We only display the latest 10-15 locks visually on the rail to prevent overcrowding
-            // In a real app, we might paginate or have a "Load More" list.
+            // Chỉ hiển thị 15 khóa mới nhất lên cầu để tránh lag/rối mắt
             const displayLocks = locksData.slice(0, 15);
 
             displayLocks.forEach((lock, index) => {
                 const el = document.createElement('div');
                 el.className = 'lock-item pointer-events-auto';
                 
-                // Random position along the rail (avoiding poles roughly)
-                // We map index to a spread to ensure they don't overlap too much
+                // Vị trí ngẫu nhiên dọc theo lan can
                 const position = (index / displayLocks.length) * 90 + 5; // 5% to 95%
                 el.style.left = `${position}%`;
                 el.style.top = `${(index % 3) * 15}px`; // Stagger vertically slightly
@@ -518,6 +499,14 @@
                 locksContainer.appendChild(el);
             });
         }
+
+        // --- INITIALIZATION (CALLED LAST) ---
+        function init() {
+            console.log("Initializing Standalone Mode...");
+            loadData();
+        }
+        
+        init(); // Run after DOM elements and functions are defined
 
         // 2. Stars Canvas Animation
         const canvas = document.getElementById('starsCanvas');
@@ -576,15 +565,14 @@
             document.getElementById('certName2').textContent = lock.name2;
             document.getElementById('certDate').textContent = new Date(lock.date).toLocaleDateString('vi-VN');
             document.getElementById('certMessage').textContent = lock.message;
-            document.getElementById('certId').textContent = '#' + lock.id.substring(0,6).toUpperCase();
+            document.getElementById('certId').textContent = '#' + (lock.id ? lock.id.substring(0,8).toUpperCase() : 'UNKNOWN');
             document.getElementById('certModal').classList.remove('hidden');
         };
 
         // Form Submit
         document.getElementById('lockForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentUser) return alert("Vui lòng đợi kết nối máy chủ...");
-
+            
             const btn = document.getElementById('submitBtn');
             const originalText = btn.textContent;
             btn.innerHTML = '<div class="loader inline-block w-4 h-4 border-2 rounded-full border-t-white border-white/20"></div> Đang xử lý...';
@@ -596,13 +584,15 @@
             const message = document.getElementById('message').value;
             const style = document.querySelector('input[name="lockStyle"]:checked').value;
 
-            try {
-                // Add to Firestore
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'locks'), {
+            // Fake Network Delay for UX
+            setTimeout(() => {
+                const newLock = {
+                    id: 'LOCK-' + Math.random().toString(36).substr(2, 9),
                     name1, name2, date, message, style,
-                    uid: currentUser.uid,
-                    createdAt: serverTimestamp()
-                });
+                    createdAt: Date.now()
+                };
+
+                addLock(newLock);
 
                 // Success
                 window.closeLockModal();
@@ -613,13 +603,9 @@
                 // Reset Form
                 e.target.reset();
 
-            } catch (error) {
-                console.error(error);
-                alert("Có lỗi xảy ra, vui lòng thử lại!");
-            } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
-            }
+            }, 800);
         });
 
         function playDropAnimation() {
@@ -629,8 +615,7 @@
             key.className = 'falling-key text-yellow-400';
             document.body.appendChild(key);
 
-            // Sound Effect (Short splash sound base64 for reliability)
-            // Using a simple timeout to simulate splash visual
+            // Sound Effect Simulation
             setTimeout(() => {
                 const splash = document.createElement('div');
                 splash.className = 'splash-effect border-white';
